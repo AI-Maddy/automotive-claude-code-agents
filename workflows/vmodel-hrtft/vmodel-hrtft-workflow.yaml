@@ -1,0 +1,170 @@
+name: vmodel-hrtft-workflow
+version: "1.0"
+description: >
+  Complete V-model development workflow for generic hard real-time fault-tolerant (HRTFT)
+  systems. Orchestrates the full left-right V-model lifecycle from system requirements
+  through system validation, integrating seven specialist agents and enforcing safety
+  evidence traceability across all phases.
+
+domain: generic
+applicable_standards:
+  - IEC 61508 (functional safety - generic)
+  - DO-178C (airborne software)
+  - EN 50128 (railway software)
+  - IEC 62304 (medical device software)
+  - ISO 26262 (road vehicles - reference mapping only)
+
+workflow_phases:
+
+  # ─── LEFT ARM OF THE V ───────────────────────────────────────────────────────
+
+  phase_1_system_requirements:
+    agent: sys-requirements-engineer
+    description: Elicit, analyse, and specify system-level safety requirements
+    inputs:
+      - Customer / operator requirements document
+      - Regulatory and standards obligations list
+      - Hazard Analysis and Risk Assessment (HARA / HAZOP)
+    outputs:
+      - System Requirements Specification (SRS) with SIL/ASIL allocation
+      - Requirements traceability matrix seed
+      - Safety functions list with integrity levels
+    gates:
+      - All hazards mapped to at least one safety function
+      - Every safety function assigned a SIL/ASIL target
+      - SRS reviewed and baselined
+
+  phase_2_architectural_design:
+    agent: rt-software-architect
+    description: Define software architecture meeting real-time and fault-tolerance requirements
+    inputs:
+      - System Requirements Specification (SRS)
+      - Hardware architectural constraints
+    outputs:
+      - Software Architectural Design Specification (SADS)
+      - Timing budget per task / execution chain
+      - Partition and separation strategy (spatial and temporal)
+      - Interface Control Documents (ICD)
+    gates:
+      - All SRS requirements allocated to one or more architectural elements
+      - Timing budget covers worst-case scenario
+      - Freedom-from-interference (FFI) strategy documented
+
+  phase_3_wcet_analysis:
+    agent: wcet-analyst
+    description: Derive and validate worst-case execution time for all tasks
+    inputs:
+      - Software Architectural Design Specification (SADS)
+      - Timing budget
+      - Source code (or detailed design)
+    outputs:
+      - WCET report per function and task
+      - Schedulability analysis (RMA/EDF)
+      - Timing margins and risk assessment
+    gates:
+      - All safety-critical tasks have verified WCET <= timing budget
+      - Schedulability proven under worst-case load
+      - No unbounded loops in safety-critical paths
+
+  phase_4_fault_tolerance_design:
+    agent: fault-tolerance-architect
+    description: Design fault detection, containment, and recovery mechanisms
+    inputs:
+      - System Requirements Specification (SRS)
+      - FMEA / FTA results
+      - Software Architectural Design Specification (SADS)
+    outputs:
+      - Fault Tolerance Architecture Document (FTAD)
+      - Redundancy and voting strategy
+      - Safe-state transition design
+      - Diagnostic coverage analysis (DC)
+    gates:
+      - All failure modes in FMEA covered by a detection or mitigation mechanism
+      - Safe-state entry time meets SIL timing requirement
+      - Diagnostic coverage target achieved (DC >= requirement per SIL)
+
+  # ─── RIGHT ARM OF THE V ──────────────────────────────────────────────────────
+
+  phase_5_unit_verification:
+    agent: unit-verification-engineer
+    description: Verify individual software units against unit design specifications
+    inputs:
+      - Software Unit Design Specifications (SUDS)
+      - Software Requirements Specification (SRS) - unit-level requirements
+      - Source code under test
+    outputs:
+      - Unit Test Plan (UTP)
+      - Unit Test Report (UTR)
+      - MC/DC coverage report
+      - WCET measurement evidence per function
+    gates:
+      - MC/DC coverage >= target for SIL-3/4 units; branch coverage for SIL-1/2
+      - All defensive code paths exercised
+      - WCET measurements within budget
+      - No unresolved MISRA / coding-rule violations
+
+  phase_6_integration_verification:
+    agent: integration-verification-engineer
+    description: Verify integrated software components against architectural design
+    inputs:
+      - Software Architectural Design Specification (SADS)
+      - Interface Control Documents (ICD)
+      - Unit Test Reports (UTR)
+    outputs:
+      - Integration Test Plan (ITP)
+      - Integration Test Report (ITR)
+      - End-to-end timing measurement log
+      - Fault propagation evidence
+    gates:
+      - All architectural interfaces tested
+      - Shared-resource contention scenarios pass
+      - End-to-end chain timing within budget on target hardware
+      - Fault containment verified at all interface boundaries
+
+  phase_7_system_validation:
+    agent: system-validation-engineer
+    description: Validate the complete system against system requirements and safety goals
+    inputs:
+      - System Requirements Specification (SRS)
+      - Integration Test Reports (ITR)
+      - HARA / HAZOP / FTA results
+    outputs:
+      - System Validation Plan (SVP)
+      - System Validation Report (SVR)
+      - Safety case contribution
+      - Fault-tolerance and safe-state timing evidence
+    gates:
+      - Every system safety requirement has a passed validation scenario
+      - Hardware fault injection demonstrates fault tolerance on production HW
+      - Safe-state entry timing meets SIL requirement under worst-case load
+      - No open safety-critical issues
+
+# ─── CROSS-CUTTING CONCERNS ────────────────────────────────────────────────────
+
+traceability:
+  tool: IBM DOORS / Polarion / Jama Connect
+  requirement: >
+    Bidirectional traceability must be maintained from each system requirement
+    through architecture, design, unit test, integration test, and system validation.
+    Coverage gaps must be resolved or formally justified before phase gate closure.
+
+configuration_management:
+  branching_strategy: GitFlow (main + develop + feature branches)
+  safety_artifacts: version-controlled alongside source code
+  build_reproducibility: locked dependency manifest required
+
+phase_gates:
+  enforcement: All gate criteria must be met and evidenced before advancing to the next phase
+  review_board: System Safety Engineer, Project Manager, and (for SIL-3/4) Independent Safety Assessor
+  deviation_process: Formal deviation request with impact assessment and safety manager approval
+
+entry_criteria:
+  - Project safety plan approved
+  - Tool qualification complete (if tools contribute to safety evidence)
+  - Development environment version-controlled and baselined
+
+exit_criteria:
+  - All phase_7 gates passed
+  - Safety case submitted and reviewed by ISA
+  - No outstanding safety-critical open issues
+  - System Validation Report formally approved
